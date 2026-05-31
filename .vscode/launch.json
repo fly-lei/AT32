@@ -1,0 +1,64 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        // ==========================================
+        // 💻 配置二：Linux PC 软件在环仿真 (指向 build_sim)
+        // ==========================================
+        {
+            "name": "Linux 仿真调试",  // 名字尽量简单，不要有特殊符号
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build_sim/test.elf", // 指向仿真构建目录
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "⚡ 启动调试 (AT32)",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/build_at32/test.elf.elf", // ⚠️ 如果你的文件是一个后缀，记得改成 test.elf
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "./AT32F403AVGT7PHC/at32f403a.cfg"
+            ],
+            
+            // ✨ 修复 1：告诉插件使用 ARM 官方工具链，解决 ENOENT 报错
+            "toolchainPrefix": "arm-none-eabi",
+            "gdbPath": "gdb-multiarch",
+            // ✨ 修复 2：覆盖启动命令。用我们手搓的向量捕获+软复位，替换掉导致崩溃的默认 reset
+            "overrideLaunchCommands": [
+                "monitor halt",
+                "monitor mww 0xE000EDFC 0x01000001",
+                "monitor mww 0xE000ED0C 0x05FA0004",
+                "monitor sleep 500",
+                "monitor halt",
+                "load"
+            ],
+            
+            // ✨ 修复 3：覆盖重启命令。这样在调试时点击绿色的“重启”按钮也能完美生效
+            "overrideRestartCommands": [
+                "monitor halt",
+                "monitor mww 0xE000EDFC 0x01000001",
+                "monitor mww 0xE000ED0C 0x05FA0004",
+                "monitor sleep 500",
+                "monitor halt"
+            ],
+            
+            "runToEntryPoint": "main",
+            "showDevDebugOutput": "none"
+        }
+    ]
+}

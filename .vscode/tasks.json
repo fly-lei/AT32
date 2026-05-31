@@ -1,0 +1,27 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "🛠️ 1. 编译 AT32 固件",
+            "type": "shell",
+            "command": "rm -rf build_at32 && cmake -B build_at32 -DBUILD_SIMULATOR=OFF ; cmake --build build_at32 -j4",
+            "group": "build", // ✨ 已经去掉了默认属性
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "🛠️ 2. 编译 Linux 仿真",
+            "type": "shell",
+            "command": "rm -rf build_sim && cmake -B build_sim -DBUILD_SIMULATOR=ON ; cmake --build build_sim -j4",
+            "group": "build",
+            "problemMatcher": ["$gcc"]
+        },
+      {
+            "label": "⚡ 3. 烧录固件到单片机 (ST-Link V2)",
+            "type": "shell",
+            // ✨ 极客连招：halt -> 开启 Vector Catch (DEMCR) -> 触发软复位 (AIRCR) -> 稍微延时等待 -> 再次 halt 确认状态 -> 完美擦写 -> 再次复位运行！
+            "command": "openocd -f interface/stlink.cfg -f ./AT32F403AVGT7PHC/at32f403a.cfg -c 'init; halt; mww 0xE000EDFC 0x01000001; mww 0xE000ED0C 0x05FA0004; sleep 50; halt; flash write_image erase build_at32/test.elf.elf; verify_image build_at32/test.elf.elf; mww 0xE000ED0C 0x05FA0004; exit'",
+            "group": "build",
+            "problemMatcher": []
+        }
+    ]
+}

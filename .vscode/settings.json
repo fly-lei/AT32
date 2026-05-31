@@ -1,0 +1,6 @@
+{
+    "cmake.buildDirectory": "${workspaceFolder}/build_linux",
+    "cmake.configureArgs": [
+        "-DBUILD_SIMULATOR=ON"
+    ]
+}
