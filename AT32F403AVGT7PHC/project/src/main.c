@@ -96,7 +96,8 @@ void QV_onIdle(void) {
 int main(void)
 {
   /* add user code begin 1 */
-
+/* 1. 暴力关闭全局中断，防止任何人抢跑！ */
+    __disable_irq();
   /* add user code end 1 */
 
   /* system clock config. */

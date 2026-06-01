@@ -149,5 +149,12 @@ void elab_mpu6500_register(elab_mpu6500_t *inst, elab_device_attr_t *attr)
     inst->dev.user_data = inst;
     
     // 如果你的框架里有 elab_device_register，在这里调用它：
-    // elab_device_register(&inst->dev, attr->name, attr->sole);
+    elab_device_register(&inst->dev, attr);
+}
+/* 统一的底层注册入口 */
+void elab_mpu6500_core_register(elab_mpu6500_t *inst, elab_device_attr_t *attr) {
+    /* 1. 绑定操作接口 */
+    
+    
+    elab_mpu6500_register(inst, attr);
 }

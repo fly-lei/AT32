@@ -20,7 +20,7 @@ typedef struct {
 } elab_mpu6500_t;
 
 /* 2. 声明底层注册函数 */
-extern void elab_mpu6500_register(elab_mpu6500_t *inst, elab_device_attr_t *attr);
+extern void elab_mpu6500_core_register(elab_mpu6500_t *inst, elab_device_attr_t *attr);
 /* 3. MPU6500 自动注册宏 */
 #define REGISTER_MPU6500_SPI(_name_str, _spi, _cs_port, _cs_pin, _level) \
     static elab_mpu6500_t _inst_##_name_str = { \
@@ -30,9 +30,9 @@ extern void elab_mpu6500_register(elab_mpu6500_t *inst, elab_device_attr_t *attr
     }; \
     static elab_device_attr_t _attr_##_name_str = { \
         .name = #_name_str, \
-        .sole = true /* 传感器通常是独占设备 */ \
+        .sole = false /* 传感器通常是独占设备 */ \
     }; \
     static void _init_##_name_str(void) { \
-        elab_mpu6500_register(&_inst_##_name_str, &_attr_##_name_str); \
+        elab_mpu6500_core_register(&_inst_##_name_str, &_attr_##_name_str); \
     } \
     ELAB_INIT_EXPORT(_init_##_name_str, _level)

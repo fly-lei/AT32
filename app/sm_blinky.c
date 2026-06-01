@@ -39,26 +39,12 @@ static QState Blinky_initial(Blinky * const me, void const * const par) {
     (void)par;
     // 寻找 VFS 设备节点
     me->led_dev = elab_device_find("led_status");
-    // me->imu_sensor = elab_device_find("imu_sensor");
+    me->imu_sensor = elab_device_find("imu_sensor");
     me->enc_left = elab_device_find("enc_left");
     me->enc_right = elab_device_find("enc_right");
-
-    /* 🔴 探针 1：看状态机是否被启动，设备指针是否为空 */
-    // printf(">>> DEBUG [AO]: Blinky_initial entered! led_dev = %p\n", (void*)me->led_dev);
-
     if (me->led_dev) elab_device_open(me->led_dev );
-    // if (me->enc_left) elab_device_open(me->enc_left );
-    // if (me->enc_right) elab_device_open(me->enc_right);
-    // if (me->imu_sensor) {
-    //     elab_device_open(me->imu_sensor);
-    //     //  gpio_bits_write(GPIOC, GPIO_PINS_14,TRUE );
-    // }else {
-    //     //  gpio_bits_write(GPIOC, GPIO_PINS_14,FALSE );
-    // }
-
     static QEvt const startEvt = QEVT_INITIALIZER(START_SIG);
     QACTIVE_POST(&me->super, &startEvt, me);
-   
     return Q_TRAN(&Blinky_active);
     // // 启动周期性定时器 (假设 系统节拍是 1ms，这里定时 500ms)
     // QTimeEvt_armX(&me->timeEvt, 500U, 500U);
@@ -86,13 +72,13 @@ static QState Blinky_active(Blinky * const me, QEvt const * const e) {
             if (me->enc_right) {
                 elab_device_read(me->enc_right, 0, &me->angle_R, sizeof(float));
             }
-    //        float imu_data[6]; // 用于存放 3轴加速度 + 3轴陀螺仪
-    //        int read_bytes = elab_device_read(me->imu_sensor, 0, imu_data, sizeof(imu_data));
+           float imu_data[6]; // 用于存放 3轴加速度 + 3轴陀螺仪
+           int read_bytes = elab_device_read(me->imu_sensor, 0, imu_data, sizeof(imu_data));
            
-    //     /* 3. 数据处理 */
-    //         if (read_bytes == sizeof(imu_data)) {
+        /* 3. 数据处理 */
+            if (read_bytes == sizeof(imu_data)) {
      
-    // }
+    }
 
             if (me->led_dev) {
                 // 将布尔值通过 VFS 写入底层
