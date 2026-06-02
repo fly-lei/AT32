@@ -18,6 +18,23 @@ extern float fpq_dc;
 #define CURR_SCALE 0.0040283f
 
 /* ========================================================================= */
+/* 双驱 FOC 全局状态机变量 (定义区，分配真实内存)                              */
+/* ========================================================================= */
+
+uint8_t Cubli_Cali_Status = 0; /* 全局校准状态（0=空闲, 1=音效校准） */
+uint8_t Music_flag = 0;        /* 音效完成标志（1=全部音效播完） */
+
+/* 启动延时计数器 */
+uint16_t delay1 = 0;       /* 电机1音效延时计数 */
+uint16_t delay2 = 0;       /* 电机2音效启动延时计数 */
+uint16_t delay_t = 0x1F40; /* 延时目标 (8000次 ≈ 400 ms) */
+
+/* 音效音调与振幅参数 */
+uint8_t hz1 = 0x21;  /* 音符1半周期 = 33  */
+uint8_t hz2 = 0x1B;  /* 音符2半周期 = 27  */
+uint8_t hz3 = 0x15;  /* 音符3半周期 = 21  */
+float fpq_dc = 0.1f; /* Vd/Vq 振幅上限 */
+/* ========================================================================= */
 /* 纯数学算法层 (无状态)                                                     */
 /* ========================================================================= */
 static void Clarke_Park_Ipark(FocData_t *foc)
@@ -162,11 +179,80 @@ void elab_foc_isr_handle(elab_foc_motor_t *inst, uint16_t EncoderValue)
         switch (inst->run_foc.Cali_flag)
         {
         case 1:
-            // ... 闭环控制 ...
-            // 注意：由于 M1_Control() 可能是强业务耦合的，如果它也在外部，可以通过函数指针回调，或者直接在这里处理 PID
+            /* 1. 解析绝对角度 */
+            // 用 32768 减去当前读数，人为反转编码器方向
+            // inst->run_foc.Encoder_data = (inst->run_foc.ThetaOffset + (ENCODER_RESOLUTION - EncoderValue)) % ENCODER_RESOLUTION;
+            inst->run_foc.Encoder_data = (inst->run_foc.ThetaOffset + EncoderValue) % ENCODER_RESOLUTION;
+            inst->run_foc.Angle = (float)inst->run_foc.Encoder_data * ENC_TO_DEG;
+            inst->run_foc.theta = inst->run_foc.Angle * POLE_PAIRS_SCALE;
+
+            /* 2. 踩下油门：应用目标扭矩/电压 */
+            // 如果你的 M1_Control() 是写了电流环 PID 的，你可以把 target_Vq 作为 PID 的输出。
+            // 如果是最简单的电压开环测试，直接把上层给的 target_Vq 塞进 FOC：
+            inst->run_foc.Vd = 0.0f;            /* 表贴式电机 D 轴始终给 0 */
+            inst->run_foc.Vq = inst->target_Vq; /* Q 轴施加目标电压产生扭矩 */
+
+            /* 如果有电流环 PID，代码应该类似这样：
+               inst->run_foc.Vq = PI_Controller(&inst->iq_pi, inst->target_Iq - inst->run_foc.Iq);
+               inst->run_foc.Vd = PI_Controller(&inst->id_pi, 0.0f - inst->run_foc.Id);
+            */
             break;
         case 2:
-            // ... 校准 ...
+            /* 1. 强制电角度为 0 (让磁场固定在 D 轴上) */
+            inst->run_foc.theta = 0.0f;
+
+            /* 2. 缓慢注入牵引电压 (像拉皮筋一样把转子强行拉正) */
+            // 注意：Vd 不能瞬间给满，必须像斜坡一样慢慢增加，防止瞬间电流过大或发出“砰”的异响
+            if (inst->run_foc.Vd < 0.15f)
+            {
+                inst->run_foc.Vd += 0.0001f;
+                if (inst->run_foc.Vd > 0.15f)
+                {
+                    inst->run_foc.Vd = 0.15f;
+                }
+            }
+            inst->run_foc.Vq = 0.0f; // Q 轴不出力，不产生旋转力矩
+
+            /* 3. 持续记录当前编码器位置作为机械零点偏移量 (ThetaOffset) */
+            // ⚠️ 极其重要：这里的公式必须和你在 case 1 里的极性方向完全匹配！
+
+            // 【情况 A】：如果你在上一回合没有改代码，是通过“物理换线”解决的震动
+            inst->run_foc.ThetaOffset = ENCODER_RESOLUTION - EncoderValue;
+
+            // 【情况 B】：如果你在上一回合是通过修改 case 1 (软件反转) 解决的震动
+            // 那么这里就必须改成直接赋值，否则偏移量就全乱了：
+            // inst->run_foc.ThetaOffset = EncoderValue;
+
+            /* 4. 倒计时等待：保持这个状态足够长时间 (CALI_HOLD_CNT)，确保转子完全稳定不动 */
+            if (++inst->cali_cnt >= CALI_HOLD_CNT)
+            {
+                inst->cali_cnt = 0;
+                inst->run_foc.Cali_Status = 1;
+                inst->run_foc.Cali_flag = 1; /* ⚠️ 核心：校准完自动切入 case 1！ */
+                inst->run_foc.Vd = 0.0f;     /* 撤销校准用的 D 轴牵引电压 */
+
+                // (注意：这里绝对不能清零 ThetaOffset，因为 case 1 马上就要用到它)
+            }
+            break;
+            /* ------------------------------------------------------------------
+             * case 3：开环强拖 (V/F 控制) —— 硬件诊断模式
+             * ----------------------------------------------------------------*/
+        case 3:
+            /* 1. 无视编码器反馈，强行让电角度匀速递增 (拖着磁场转) */
+            // 这里的 0.002f 决定了旋转的速度。如果想转快点，可以改为 0.005f
+            inst->run_foc.theta += 0.002f;
+            if (inst->run_foc.theta > 6.2831853f)
+            { // 超过 2π 则回绕
+                inst->run_foc.theta -= 6.2831853f;
+            }
+
+            /* 2. 给定恒定的牵引电压 */
+            // ⚠️ 警告：开环极度耗电且发热快，电压千万别给大！从 0.05f 试起。
+            inst->run_foc.Vd = 0.06f; // 用 D 轴或 Q 轴电压都可以，这里注固定电压
+            inst->run_foc.Vq = 0.0f;
+
+            /* 3. 后台悄悄记录编码器的真实读数 (用于排查极对数和方向) */
+            inst->run_foc.Encoder_data = EncoderValue;
             break;
         case 5:
             inst->run_foc.Cali_Status = 5;

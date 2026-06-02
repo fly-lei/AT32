@@ -18,12 +18,12 @@ extern QActive *const AO_Blinky;
 /* ========================================================================= */
 /* ⚡ 闪电指针缓存区 (专供 20kHz 中断使用)                                   */
 /* ========================================================================= */
-static elab_foc_motor_t *g_motor_L = NULL;
-static elab_foc_motor_t *g_motor_R = NULL;
+elab_foc_motor_t *g_motor_L = NULL;
+elab_foc_motor_t *g_motor_R = NULL;
 
 /* 注意这里类型是具体的 elab_tle5012b_t，而不是抽象的 elab_device_t */
-static elab_tle5012b_t *g_enc_L = NULL;
-static elab_tle5012b_t *g_enc_R = NULL;
+elab_tle5012b_t *g_enc_L = NULL;
+elab_tle5012b_t *g_enc_R = NULL;
 
 void System_Link_Devices(void)
 {
@@ -40,6 +40,7 @@ void System_Link_Devices(void)
 // 2. 跨平台的统一启动总闸
 void App_System_Start(void)
 {
+    System_Link_Devices(); /* 连接设备（必须在 QF_run 之前） */
     // 第一步：初始化 QP 框架的基础设施
     QF_init();
     QF_psInit(l_subscrSto, Q_DIM(l_subscrSto));
@@ -68,7 +69,6 @@ void App_System_Start(void)
 
     // 注意：这里绝对不要调用 QF_run()！
     // 因为 QF_run() 是一个死循环，一旦调用就不会返回了。
-    System_Link_Devices(); /* 连接设备（必须在 QF_run 之前） */
 }
 
 /* ================== 系统强制回调 (BSP) ================== */

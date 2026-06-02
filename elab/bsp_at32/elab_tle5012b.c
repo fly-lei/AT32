@@ -32,20 +32,30 @@ uint16_t tle5012b_read_raw_fast(elab_tle5012b_t *inst)
 /* ========================================================================= */
 /* 底层 SPI 16位 硬件通信层                                                  */
 /* ========================================================================= */
-
-/**
- * @brief  AT32 的 16-Bit SPI 底层收发
- */
 static uint16_t tle_spi_swap_16bit(spi_type *spi_x, uint16_t tx_data)
 {
-    /* 等待发送缓冲区空 */
+    uint32_t timeout = 50000; // 超时计数器 (根据主频微调)
+
+    /* 等待发送缓冲区空，加上超时保护 */
     while (spi_i2s_flag_get(spi_x, SPI_I2S_TDBE_FLAG) == RESET)
-        ;
+    {
+        if (--timeout == 0)
+        {
+            return 0xFFFF; // ⚠️ 超时！直接返回错误码，绝不卡死系统！
+        }
+    }
     spi_i2s_data_transmit(spi_x, tx_data);
 
-    /* 等待接收缓冲区非空 */
+    timeout = 50000; // 重置超时计数器
+
+    /* 等待接收缓冲区非空，加上超时保护 */
     while (spi_i2s_flag_get(spi_x, SPI_I2S_RDBF_FLAG) == RESET)
-        ;
+    {
+        if (--timeout == 0)
+        {
+            return 0xFFFF; // ⚠️ 超时！直接跑路！
+        }
+    }
     return spi_i2s_data_receive(spi_x);
 }
 
@@ -136,11 +146,11 @@ void elab_tle5012b_register(elab_tle5012b_t *inst, elab_device_attr_t *attr)
     float test_angle;
     int read_res = tle5012b_read(&inst->dev, 0, &test_angle, sizeof(float));
 
-    if (read_res == 0)
-    {
-        // 探测失败：芯片未接好，或者 SPI 不通
-        return;
-    }
+    // if (read_res == 0)
+    // {
+    //     // 探测失败：芯片未接好，或者 SPI 不通
+    //     return;
+    // }
 
     /* 3. 探测成功，挂载到 eLab */
     inst->dev.ops = &tle_ops;

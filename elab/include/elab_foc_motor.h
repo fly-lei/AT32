@@ -66,7 +66,7 @@ typedef struct
     float cfg_fpq_hz;       /* Vd/Vq 步进幅度 (M1=0.05, M2=0.0025) */
     uint16_t cfg_jiange;    /* 音符时长 (M1=8000, M2=9000) */
     float cfg_case5_vd_max; /* 自检阶段 Vd 上限 (M1=0.15, M2=0.125) */
-
+    float target_Vq;        /* 目标 Q 轴电压 (开环扭矩/速度) */
 } elab_foc_motor_t;
 
 /* 对外暴露的 ISR 处理接口 (将在定时器中断中被极速调用) */

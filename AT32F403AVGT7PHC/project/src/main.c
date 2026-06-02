@@ -1,27 +1,27 @@
 /* add user code begin Header */
 /**
-  **************************************************************************
-  * @file     main.c
-  * @brief    main program
-  **************************************************************************
-  * Copyright (c) 2025, Artery Technology, All rights reserved.
-  *
-  * The software Board Support Package (BSP) that is made available to
-  * download from Artery official website is the copyrighted work of Artery.
-  * Artery authorizes customers to use, copy, and distribute the BSP
-  * software and its related documentation for the purpose of design and
-  * development in conjunction with Artery microcontrollers. Use of the
-  * software is governed by this copyright notice and the following disclaimer.
-  *
-  * THIS SOFTWARE IS PROVIDED ON "AS IS" BASIS WITHOUT WARRANTIES,
-  * GUARANTEES OR REPRESENTATIONS OF ANY KIND. ARTERY EXPRESSLY DISCLAIMS,
-  * TO THE FULLEST EXTENT PERMITTED BY LAW, ALL EXPRESS, IMPLIED OR
-  * STATUTORY OR OTHER WARRANTIES, GUARANTEES OR REPRESENTATIONS,
-  * INCLUDING BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY,
-  * FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
-  *
-  **************************************************************************
-  */
+ **************************************************************************
+ * @file     main.c
+ * @brief    main program
+ **************************************************************************
+ * Copyright (c) 2025, Artery Technology, All rights reserved.
+ *
+ * The software Board Support Package (BSP) that is made available to
+ * download from Artery official website is the copyrighted work of Artery.
+ * Artery authorizes customers to use, copy, and distribute the BSP
+ * software and its related documentation for the purpose of design and
+ * development in conjunction with Artery microcontrollers. Use of the
+ * software is governed by this copyright notice and the following disclaimer.
+ *
+ * THIS SOFTWARE IS PROVIDED ON "AS IS" BASIS WITHOUT WARRANTIES,
+ * GUARANTEES OR REPRESENTATIONS OF ANY KIND. ARTERY EXPRESSLY DISCLAIMS,
+ * TO THE FULLEST EXTENT PERMITTED BY LAW, ALL EXPRESS, IMPLIED OR
+ * STATUTORY OR OTHER WARRANTIES, GUARANTEES OR REPRESENTATIONS,
+ * INCLUDING BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
+ *
+ **************************************************************************
+ */
 /* add user code end Header */
 
 /* Includes ------------------------------------------------------------------*/
@@ -73,31 +73,34 @@ extern void App_System_Start(void);
 /* add user code begin 0 */
 
 /* 修复 2：提供临界区挂钩 (QP/C 需要靠它们来防止中断打断状态机) */
-void QF_crit_entry_(void) {
-    __disable_irq(); /* 关中断 */
+void QF_crit_entry_(void)
+{
+  __disable_irq(); /* 关中断 */
 }
-void QF_crit_exit_(void) {
-    __enable_irq();  /* 开中断 */
+void QF_crit_exit_(void)
+{
+  __enable_irq(); /* 开中断 */
 }
 
 /* 修复 3：顺手补上 QV 内核强制要求的空闲回调 */
-void QV_onIdle(void) {
-    // __enable_irq();
-    // __WFI(); /* Wait For Interrupt：系统没事干时进入休眠，降低单片机功耗 */
-    QF_INT_ENABLE();
+void QV_onIdle(void)
+{
+  // __enable_irq();
+  // __WFI(); /* Wait For Interrupt：系统没事干时进入休眠，降低单片机功耗 */
+  QF_INT_ENABLE();
 }
 /* add user code end 0 */
 
 /**
-  * @brief main function.
-  * @param  none
-  * @retval none
-  */
+ * @brief main function.
+ * @param  none
+ * @retval none
+ */
 int main(void)
 {
   /* add user code begin 1 */
-/* 1. 暴力关闭全局中断，防止任何人抢跑！ */
-    __disable_irq();
+  /* 1. 暴力关闭全局中断，防止任何人抢跑！ */
+  __disable_irq();
   /* add user code end 1 */
 
   /* system clock config. */
@@ -129,7 +132,7 @@ int main(void)
   wk_spi3_init();
 
   /* init tmr1 function. */
-  wk_tmr1_init();
+  // wk_tmr1_init();
 
   /* init tmr6 function. */
   wk_tmr6_init();
@@ -144,12 +147,15 @@ int main(void)
   wk_usb_app_init();
 
   /* add user code begin 2 */
-  eLab_InitAll(); 
+  eLab_InitAll();
   App_System_Start();
+  wk_tmr1_init();
+  gpio_bits_reset(GPIOD, GPIO_PINS_10);
+  gpio_bits_set(GPIOE, GPIO_PINS_7);
   QF_run(); /* 进入 QP/C 的事件循环，永不返回！ */
   /* add user code end 2 */
 
-  while(1)
+  while (1)
   {
     wk_usb_app_task();
 
@@ -159,6 +165,6 @@ int main(void)
   }
 }
 
-  /* add user code begin 4 */
+/* add user code begin 4 */
 
-  /* add user code end 4 */
+/* add user code end 4 */
