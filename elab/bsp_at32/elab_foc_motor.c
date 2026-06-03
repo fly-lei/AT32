@@ -37,28 +37,176 @@ float fpq_dc = 0.1f; /* Vd/Vq 振幅上限 */
 /* ========================================================================= */
 /* 纯数学算法层 (无状态)                                                     */
 /* ========================================================================= */
+/* ========================================================================= */
+/* Clarke变换 + Park变换 + 逆Park变换（合并一次执行）                       */
+/* ========================================================================= */
 static void Clarke_Park_Ipark(FocData_t *foc)
 {
     float theta = foc->theta;
     float sin_theta = sinf(theta);
     float cos_theta = cosf(theta);
 
-    // ... (保留你原本一模一样的 Clarke/Park 代码)
-}
+    foc->SinValue = sin_theta;
+    foc->CosValue = cos_theta;
 
+    /* 1. Clarke 变换 (三相静止 -> 两相静止) */
+    float Ia = foc->Ia;
+    float Ib = foc->Ib;
+    float Ic = foc->Ic;
+
+    float sum = (Ia + Ib + Ic) * 0.33333f;
+    float Ialpha = Ia - sum;
+    float Ibeta = ((Ia - sum) + 2.0f * (Ib - sum)) * 0.57735f;
+
+    foc->Ialpha = Ialpha;
+    foc->Ibeta = Ibeta;
+
+    /* 2. Park 变换 (两相静止 -> 两相旋转) */
+    float Id = Ialpha * cos_theta + Ibeta * sin_theta;
+    float Iq = -Ialpha * sin_theta + Ibeta * cos_theta; // Iq 正向定义
+
+    foc->Id = Id;
+    foc->Iq = Iq;
+
+    /* 3. Inverse Park 变换 (两相旋转电压 -> 两相静止电压) */
+    float Vd = foc->Vd;
+    float Vq = foc->Vq;
+
+    float Valpha = Vd * cos_theta - Vq * sin_theta; // 标准 Inverse Park
+    float Vbeta = Vd * sin_theta + Vq * cos_theta;
+
+    foc->Valpha = Valpha;
+    foc->Vbeta = Vbeta;
+}
 /* ========================================================================= */
-/* SVPWM 生成器 (操作对象化)                                                 */
+/* svpwm() 空间矢量脉宽调制（7段式中心对齐 SVPWM）                          */
 /* ========================================================================= */
 static void svpwm(FocData_t *foc, elab_foc_motor_t *inst)
 {
     uint16_t Ta = 0, Tb = 0, Tc = 0;
+    float t1, t2, t0, tsum;
     float Valpha = foc->Valpha;
     float Vbeta = foc->Vbeta;
-    uint16_t arr = *(inst->tmr_arr_reg); /* 动态读取对应的 ARR */
+    float X, Y, U, V, W;
+    uint16_t arr = *(inst->tmr_arr_reg); /* 动态读取当前电机对应的 ARR 自动重载值 */
+    uint8_t sector;
 
-    // ... (保留你原本一模一样的 7 段式扇区计算，求出 Ta, Tb, Tc)
+    X = Valpha * 0.86603f;
+    Y = Vbeta * 0.5f;
+    U = -Vbeta; /* v7 */
+    V = X + Y;  /* v8 */
+    W = Y - X;  /* v9 */
 
-    /* 极致抽象：直接写入绑定的寄存器，无需判断 motor_id ! */
+    /* 扇区判断：1~6 */
+    sector = (uint8_t)((U > 0.0f) + 2 * (V > 0.0f) + 4 * (W > 0.0f));
+
+    switch (sector)
+    {
+    /* 扇区1（U>0, V≤0, W≤0）*/
+    case 1:
+        t1 = -W;
+        t2 = -V;
+        tsum = t1 + t2;
+        if (tsum > 1.0f)
+        {
+            t1 /= tsum;
+            t2 /= tsum;
+        }
+        t0 = (1.0f - t1 - t2) * 0.5f;
+        Ta = (uint16_t)(uint32_t)((t2 + t0) * arr);
+        Tb = (uint16_t)(uint32_t)((t1 + t2 + t0) * arr);
+        Tc = (uint16_t)(uint32_t)(t0 * arr);
+        break;
+
+    /* 扇区2（U≤0, V>0, W≤0）*/
+    case 2:
+        t1 = -U;
+        t2 = -W;
+        tsum = t1 + t2;
+        if (tsum > 1.0f)
+        {
+            t1 /= tsum;
+            t2 /= tsum;
+        }
+        t0 = 1.0f - t1 - t2;
+        Ta = (uint16_t)(uint32_t)((t0 * 0.5f) * arr);
+        Tb = (uint16_t)(uint32_t)((t2 + t0 * 0.5f) * arr);
+        Tc = (uint16_t)(uint32_t)((t1 + t2 + t0 * 0.5f) * arr);
+        break;
+
+    /* 扇区3（U>0, V>0, W≤0）*/
+    case 3:
+        t1 = -Vbeta; /* = U */
+        t2 = V;
+        tsum = V - Vbeta; /* = V + U */
+        if (tsum > 1.0f)
+        {
+            t1 = U / tsum;
+            t2 = V / tsum;
+        }
+        t0 = (1.0f - t1 - t2) * 0.5f;
+        Ta = (uint16_t)(uint32_t)(t0 * arr);
+        Tb = (uint16_t)(uint32_t)((t1 + t2 + t0) * arr);
+        Tc = (uint16_t)(uint32_t)((t2 + t0) * arr);
+        break;
+
+    /* 扇区4（U≤0, V≤0, W>0）*/
+    case 4:
+        t1 = -V;
+        t2 = -U;
+        tsum = t1 + t2;
+        if (tsum > 1.0f)
+        {
+            t1 /= tsum;
+            t2 /= tsum;
+        }
+        t0 = (1.0f - t1 - t2) * 0.5f;
+        Ta = (uint16_t)(uint32_t)((t1 + t2 + t0) * arr);
+        Tb = (uint16_t)(uint32_t)(t0 * arr);
+        Tc = (uint16_t)(uint32_t)((t2 + t0) * arr);
+        break;
+
+    /* 扇区5（U>0, V≤0, W>0）*/
+    case 5:
+        t1 = W;
+        t2 = U;
+        tsum = W - Vbeta; /* = W + U */
+        if (tsum > 1.0f)
+        {
+            t1 = W / tsum;
+            t2 = U / tsum;
+        }
+        t0 = (1.0f - t1 - t2) * 0.5f;
+        Ta = (uint16_t)(uint32_t)((t1 + t2 + t0) * arr);
+        Tb = (uint16_t)(uint32_t)((t2 + t0) * arr);
+        Tc = (uint16_t)(uint32_t)(t0 * arr);
+        break;
+
+    /* 扇区6（U≤0, V>0, W>0）*/
+    case 6:
+        t1 = V;
+        t2 = W;
+        tsum = W - (-X - Y); /* = W + X + Y = 2Y = Vbeta */
+        if (tsum > 1.0f)
+        {
+            t1 = V / tsum;
+            t2 = W / tsum;
+        }
+        t0 = (1.0f - t1 - t2) * 0.5f;
+        Ta = (uint16_t)(uint32_t)((t2 + t0) * arr);
+        Tb = (uint16_t)(uint32_t)(t0 * arr);
+        Tc = (uint16_t)(uint32_t)((t1 + t2 + t0) * arr);
+        break;
+
+    default:
+        /* sector=0 或 7（理论不可达），Ta/Tb/Tc 保持 0 */
+        break;
+    }
+
+    /* =====================================================================
+     * 🚀 极致抽象：通过对象绑定的寄存器指针，直接将占空比写入对应的定时器通道
+     * 无需关心当前跑的是 TMR1 还是 TMR8，框架会自动路由！
+     * ===================================================================== */
     *(inst->tmr_ccr1_reg) = Ta;
     *(inst->tmr_ccr2_reg) = Tb;
     *(inst->tmr_ccr3_reg) = Tc;

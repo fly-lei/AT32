@@ -1,18 +1,19 @@
 /*
 *****************************************************************************
 **
-** File        : AT32F403AxG_FLASH.ld
+**  File        : AT32F403AxG_FLASH.ld
 **
-** Abstract    : Linker script for AT32F403AxG Device with
-** 1000KByte FLASH, 96KByte RAM
+**  Abstract    : Linker script for AT32F403AxG Device with
+**                1000KByte FLASH, 96KByte RAM
 **
-** Set heap size, stack size and stack location according
-** to application requirements.
+**                Set heap size, stack size and stack location according
+**                to application requirements.
 **
-** Set memory bank area and size if external memory is used.
+**                Set memory bank area and size if external memory is used.
 **
-** Target      : Artery Tek AT32
-** Environment : Arm gcc toolchain
+**  Target      : Artery Tek AT32
+**
+**  Environment : Arm gcc toolchain
 **
 *****************************************************************************
 */
@@ -25,7 +26,7 @@ _estack = 0x20018000;    /* end of RAM */
 
 /* Generate a link error if heap and stack don't fit into RAM */
 _Min_Heap_Size = 0x200;      /* required amount of heap  */
-_Min_Stack_Size = 0x1000; /* required amount of stack */
+_Min_Stack_Size = 0x400; /* required amount of stack */
 
 /* Specify the memory areas */
 MEMORY
@@ -58,15 +59,6 @@ SECTIONS
 
     KEEP (*(.init))
     KEEP (*(.fini))
-
-    /* ⬇️ 【修复核心】：把自定义段安全地嵌在 .text 内部 ⬇️ */
-    . = ALIGN(4);
-    _elab_init_start = .;           /* 1. 先定义开始标记 */
-    KEEP(*(.elab_init_table))       /* 2. 放入数据 */
-    KEEP(*(SORT(.elab_init_table.*))) 
-    _elab_init_end = .;             /* 3. 再定义结束标记 */
-    . = ALIGN(4);
-    /* ⬆️ 结束 ⬆️ */
 
     . = ALIGN(4);
     _etext = .;        /* define a global symbols at end of code */

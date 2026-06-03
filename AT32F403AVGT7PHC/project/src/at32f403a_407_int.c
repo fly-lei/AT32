@@ -81,10 +81,10 @@ extern void QF_onClockTick(void);
 /* add user code end external variables */
 
 /**
- * @brief  this function handles nmi exception.
- * @param  none
- * @retval none
- */
+  * @brief  this function handles nmi exception.
+  * @param  none
+  * @retval none
+  */
 void NMI_Handler(void)
 {
   /* add user code begin NonMaskableInt_IRQ 0 */
@@ -97,10 +97,10 @@ void NMI_Handler(void)
 }
 
 /**
- * @brief  this function handles hard fault exception.
- * @param  none
- * @retval none
- */
+  * @brief  this function handles hard fault exception.
+  * @param  none
+  * @retval none
+  */
 void HardFault_Handler(void)
 {
   /* add user code begin HardFault_IRQ 0 */
@@ -115,11 +115,12 @@ void HardFault_Handler(void)
   }
 }
 
+
 /**
- * @brief  this function handles memory manage exception.
- * @param  none
- * @retval none
- */
+  * @brief  this function handles memory manage exception.
+  * @param  none
+  * @retval none
+  */
 void MemManage_Handler(void)
 {
   /* add user code begin MemoryManagement_IRQ 0 */
@@ -135,10 +136,10 @@ void MemManage_Handler(void)
 }
 
 /**
- * @brief  this function handles bus fault exception.
- * @param  none
- * @retval none
- */
+  * @brief  this function handles bus fault exception.
+  * @param  none
+  * @retval none
+  */
 void BusFault_Handler(void)
 {
   /* add user code begin BusFault_IRQ 0 */
@@ -154,10 +155,10 @@ void BusFault_Handler(void)
 }
 
 /**
- * @brief  this function handles usage fault exception.
- * @param  none
- * @retval none
- */
+  * @brief  this function handles usage fault exception.
+  * @param  none
+  * @retval none
+  */
 void UsageFault_Handler(void)
 {
   /* add user code begin UsageFault_IRQ 0 */
@@ -173,10 +174,10 @@ void UsageFault_Handler(void)
 }
 
 /**
- * @brief  this function handles svcall exception.
- * @param  none
- * @retval none
- */
+  * @brief  this function handles svcall exception.
+  * @param  none
+  * @retval none
+  */
 void SVC_Handler(void)
 {
   /* add user code begin SVCall_IRQ 0 */
@@ -188,10 +189,10 @@ void SVC_Handler(void)
 }
 
 /**
- * @brief  this function handles debug monitor exception.
- * @param  none
- * @retval none
- */
+  * @brief  this function handles debug monitor exception.
+  * @param  none
+  * @retval none
+  */
 void DebugMon_Handler(void)
 {
   /* add user code begin DebugMonitor_IRQ 0 */
@@ -203,10 +204,10 @@ void DebugMon_Handler(void)
 }
 
 /**
- * @brief  this function handles pendsv_handler exception.
- * @param  none
- * @retval none
- */
+  * @brief  this function handles pendsv_handler exception.
+  * @param  none
+  * @retval none
+  */
 void PendSV_Handler(void)
 {
   /* add user code begin PendSV_IRQ 0 */
@@ -217,11 +218,12 @@ void PendSV_Handler(void)
   /* add user code end PendSV_IRQ 1 */
 }
 
+
 /**
- * @brief  this function handles systick handler.
- * @param  none
- * @retval none
- */
+  * @brief  this function handles systick handler.
+  * @param  none
+  * @retval none
+  */
 void SysTick_Handler(void)
 {
   /* add user code begin SysTick_IRQ 0 */
@@ -236,21 +238,22 @@ void SysTick_Handler(void)
 }
 
 /**
- * @brief  this function handles ADC1 & ADC2 handler.
- * @param  none
- * @retval none
- */
+  * @brief  this function handles ADC1 & ADC2 handler.
+  * @param  none
+  * @retval none
+  */
 void ADC1_2_IRQHandler(void)
 {
   /* add user code begin ADC1_2_IRQ 0 */
 
   /* add user code end ADC1_2_IRQ 0 */
 
-  if (adc_interrupt_flag_get(ADC1, ADC_PCCE_FLAG) != RESET)
+  if(adc_interrupt_flag_get(ADC1, ADC_PCCE_FLAG) != RESET)
   {
     /* add user code begin ADC1_ADC_PCCE_FLAG */
     /* clear flag */
     /* 现在这里绝对不会报错了，编译器已经认识它们了！ */
+    /* 你的 FOC 核心计算逻辑 ... */
     if (g_enc_L && g_enc_R)
     {
       uint16_t raw_pos_L = tle5012b_read_raw_fast(g_enc_L);
@@ -259,8 +262,12 @@ void ADC1_2_IRQHandler(void)
       elab_foc_isr_handle(g_motor_L, raw_pos_L);
       elab_foc_isr_handle(g_motor_R, raw_pos_R);
     }
+
+    /* ========================================================================= */
+    /* 🚨 终极修正：必须清除抢占通道（注入通道）的转换结束标志！                 */
+    /* ========================================================================= */
     adc_flag_clear(ADC1, ADC_PCCE_FLAG);
-    /* add user code end ADC1_ADC_PCCE_FLAG */
+    /* add user code end ADC1_ADC_PCCE_FLAG */ 
   }
 
   /* add user code begin ADC1_2_IRQ 1 */
@@ -269,10 +276,10 @@ void ADC1_2_IRQHandler(void)
 }
 
 /**
- * @brief  this function handles TMR6 handler.
- * @param  none
- * @retval none
- */
+  * @brief  this function handles TMR6 handler.
+  * @param  none
+  * @retval none
+  */
 void TMR6_GLOBAL_IRQHandler(void)
 {
   /* add user code begin TMR6_GLOBAL_IRQ 0 */
@@ -280,7 +287,7 @@ void TMR6_GLOBAL_IRQHandler(void)
   /* add user code end TMR6_GLOBAL_IRQ 0 */
 
   /* overflow interrupt management */
-  if (tmr_interrupt_flag_get(TMR6, TMR_OVF_FLAG) != RESET)
+  if(tmr_interrupt_flag_get(TMR6, TMR_OVF_FLAG) != RESET)
   {
     /* add user code begin TMR6_TMR_OVF_FLAG */
     /* clear flag */
@@ -294,10 +301,10 @@ void TMR6_GLOBAL_IRQHandler(void)
 }
 
 /**
- * @brief  this function handles ACC handler.
- * @param  none
- * @retval none
- */
+  * @brief  this function handles ACC handler.
+  * @param  none
+  * @retval none
+  */
 void ACC_IRQHandler(void)
 {
   /* add user code begin ACC_IRQ 0 */
@@ -310,10 +317,10 @@ void ACC_IRQHandler(void)
 }
 
 /**
- * @brief  this function handles USB Map Low handler.
- * @param  none
- * @retval none
- */
+  * @brief  this function handles USB Map Low handler.
+  * @param  none
+  * @retval none
+  */
 void USBFS_MAPL_IRQHandler(void)
 {
   /* add user code begin USBFS_MAPL_IRQ 0 */

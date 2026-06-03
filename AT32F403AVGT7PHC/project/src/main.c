@@ -32,6 +32,7 @@
 #include "wk_spi.h"
 #include "wk_tmr.h"
 #include "wk_usbfs.h"
+#include "wk_dma.h"
 #include "wk_gpio.h"
 #include "usb_app.h"
 #include "wk_system.h"
@@ -52,6 +53,8 @@ extern void App_System_Start(void);
 /* private define ------------------------------------------------------------*/
 /* add user code begin private define */
 
+/* 定义接收数组：[0]=电压, [1]=温度1, [2]=温度2 */
+uint16_t g_adc3_buffer[3] = {0};
 /* add user code end private define */
 
 /* private macro -------------------------------------------------------------*/
@@ -146,11 +149,33 @@ int main(void)
   /* init usb app function. */
   wk_usb_app_init();
 
+  /* init adc2 function. */
+  wk_adc2_init();
+
+  /* init tmr8 function. */
+  // wk_tmr8_init();
+
+  /* init adc3 function. */
+  wk_adc3_init();
+
+  /* init dma2 channel5 */
+  wk_dma2_channel5_init();
+  /* config dma channel transfer parameter */
+  /* user need to modify define values DMAx_CHANNELy_XXX_BASE_ADDR
+     and DMAx_CHANNELy_BUFFER_SIZE in at32xxx_wk_config.h */
+  wk_dma_channel_config(DMA2_CHANNEL5,
+                        (uint32_t)&ADC3->odt,
+                        DMA2_CHANNEL5_MEMORY_BASE_ADDR,
+                        DMA2_CHANNEL5_BUFFER_SIZE);
+  dma_channel_enable(DMA2_CHANNEL5, TRUE);
+
   /* add user code begin 2 */
+  adc_ordinary_software_trigger_enable(ADC3, TRUE);
   eLab_InitAll();
   App_System_Start();
   wk_tmr1_init();
-  gpio_bits_reset(GPIOD, GPIO_PINS_10);
+  wk_tmr8_init();
+  // gpio_bits_reset(GPIOD, GPIO_PINS_10);
   gpio_bits_set(GPIOE, GPIO_PINS_7);
   QF_run(); /* 进入 QP/C 的事件循环，永不返回！ */
   /* add user code end 2 */

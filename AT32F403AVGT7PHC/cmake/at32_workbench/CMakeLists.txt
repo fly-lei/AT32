@@ -32,11 +32,12 @@ set(WK_Application_Src
     ${CMAKE_SOURCE_DIR}/project/src/wk_tmr.c
     ${CMAKE_SOURCE_DIR}/project/src/wk_usbfs.c
     ${CMAKE_SOURCE_DIR}/project/src/wk_gpio.c
+    ${CMAKE_SOURCE_DIR}/project/src/wk_dma.c
     ${CMAKE_SOURCE_DIR}/startup_at32f403a_407.s
+    ${CMAKE_SOURCE_DIR}/project/src/usb_app.c
     ${CMAKE_SOURCE_DIR}/project/src/rtc.c
     ${CMAKE_SOURCE_DIR}/project/src/cdc_class.c
     ${CMAKE_SOURCE_DIR}/project/src/cdc_desc.c
-    ${CMAKE_SOURCE_DIR}/project/src/usb_app.c
 )
 
 # AT32 Drivers

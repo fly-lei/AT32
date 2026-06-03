@@ -1,8 +1,8 @@
 /* add user code begin Header */
 /**
   **************************************************************************
-  * @file     wk_adc.h
-  * @brief    header file of work bench config
+  * @file     at32f403a_407_int.h
+  * @brief    header file of main interrupt service routines.
   **************************************************************************
   * Copyright (c) 2025, Artery Technology, All rights reserved.
   *
@@ -24,23 +24,23 @@
   */
 /* add user code end Header */
 
-/* define to prevent recursive inclusion -----------------------------------*/
-#ifndef __WK_ADC_H
-#define __WK_ADC_H
+/* define to prevent recursive inclusion -------------------------------------*/
+#ifndef __AT32F403A_407_INT_H
+#define __AT32F403A_407_INT_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* includes -----------------------------------------------------------------------*/
-#include "at32f403a_407_wk_config.h"
+/* includes ------------------------------------------------------------------*/
+#include "at32f403a_407.h"
 
-/* private includes -------------------------------------------------------------*/
+/* private includes ----------------------------------------------------------*/
 /* add user code begin private includes */
 
 /* add user code end private includes */
 
-/* exported types -------------------------------------------------------------*/
+/* exported types ------------------------------------------------------------*/
 /* add user code begin exported types */
 
 /* add user code end exported types */
@@ -56,16 +56,21 @@ extern "C" {
 /* add user code end exported macro */
 
 /* exported functions ------------------------------------------------------- */
+void NMI_Handler(void);
+void HardFault_Handler(void);
+void MemManage_Handler(void);
+void BusFault_Handler(void);
+void UsageFault_Handler(void);
+void SVC_Handler(void);
+void DebugMon_Handler(void);
+void PendSV_Handler(void);
+void SysTick_Handler(void);
 
-  /* init adc1 function. */
-  void wk_adc1_init(void);
-
-  /* init adc2 function. */
-  void wk_adc2_init(void);
-
-  /* init adc3 function. */
-  void wk_adc3_init(void);
-
+void ADC1_2_IRQHandler(void);
+void TMR6_GLOBAL_IRQHandler(void);
+void DMA2_Channel4_5_IRQHandler(void);
+void ACC_IRQHandler(void);
+void USBFS_MAPL_IRQHandler(void);
 /* add user code begin exported functions */
 
 /* add user code end exported functions */
