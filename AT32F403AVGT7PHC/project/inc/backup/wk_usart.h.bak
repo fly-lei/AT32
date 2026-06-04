@@ -1,7 +1,7 @@
 /* add user code begin Header */
 /**
   **************************************************************************
-  * @file     wk_dma.h
+  * @file     wk_usart.h
   * @brief    header file of work bench config
   **************************************************************************
   * Copyright (c) 2025, Artery Technology, All rights reserved.
@@ -25,8 +25,8 @@
 /* add user code end Header */
 
 /* define to prevent recursive inclusion -----------------------------------*/
-#ifndef __WK_DMA_H
-#define __WK_DMA_H
+#ifndef __WK_USART_H
+#define __WK_USART_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,18 +57,8 @@ extern "C" {
 
 /* exported functions ------------------------------------------------------- */
 
-  /* init dma1 channel4 */
-  void wk_dma1_channel4_init(void);
-
-  /* init dma1 channel5 */
-  void wk_dma1_channel5_init(void);
-
-  /* init dma2 channel5 */
-  void wk_dma2_channel5_init(void);
-
-  /* config dma channel transfer parameter */
-  /* user need to modify parameters memory_base_addr and buffer_size */
-  void wk_dma_channel_config(dma_channel_type* dmax_channely, uint32_t peripheral_base_addr, uint32_t memory_base_addr, uint16_t buffer_size);
+  /* init usart1 function. */
+  void wk_usart1_init(void);
 
 /* add user code begin exported functions */
 

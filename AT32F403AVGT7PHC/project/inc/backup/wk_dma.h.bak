@@ -57,6 +57,12 @@ extern "C" {
 
 /* exported functions ------------------------------------------------------- */
 
+  /* init dma1 channel1 */
+  void wk_dma1_channel1_init(void);
+
+  /* init dma1 channel2 */
+  void wk_dma1_channel2_init(void);
+
   /* init dma2 channel5 */
   void wk_dma2_channel5_init(void);
 

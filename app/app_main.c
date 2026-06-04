@@ -14,7 +14,7 @@ extern void Blinky_ctor(void);
 extern QActive *const AO_Blinky;
 #include "elab_foc_motor.h"
 #include "elab_tle5012b.h"
-
+#include "elab_power_key.h"
 /* ========================================================================= */
 /* ⚡ 闪电指针缓存区 (专供 20kHz 中断使用)                                   */
 /* ========================================================================= */
@@ -24,7 +24,29 @@ elab_foc_motor_t *g_motor_R = NULL;
 /* 注意这里类型是具体的 elab_tle5012b_t，而不是抽象的 elab_device_t */
 elab_tle5012b_t *g_enc_L = NULL;
 elab_tle5012b_t *g_enc_R = NULL;
+/* 顶层注册的回调函数：负责将底层事件转化为状态机事件 */
+static void On_System_Key_Event(elab_key_event_t evt)
+{
 
+    static QEvt const short_press_evt = QEVT_INITIALIZER(SHORT_PRESS_SIG);
+    static QEvt const long_press_evt = QEVT_INITIALIZER(LONG_PRESS_SIG);
+
+    switch (evt)
+    {
+    case ELAB_KEY_EVT_SHORT_PRESS:
+        /* 邮寄短按事件给主状态机 */
+        QACTIVE_POST((QActive *)AO_Blinky, &short_press_evt, 0U);
+        break;
+
+    case ELAB_KEY_EVT_LONG_PRESS:
+        /* 邮寄长按事件给主状态机 */
+        QACTIVE_POST((QActive *)AO_Blinky, &long_press_evt, 0U);
+        break;
+
+    default:
+        break;
+    }
+}
 void System_Link_Devices(void)
 {
     /* 在进入主循环(QF_run)前，把所有对象找齐 */
@@ -40,6 +62,7 @@ void System_Link_Devices(void)
 // 2. 跨平台的统一启动总闸
 void App_System_Start(void)
 {
+    elab_power_key_init(On_System_Key_Event);
     System_Link_Devices(); /* 连接设备（必须在 QF_run 之前） */
     // 第一步：初始化 QP 框架的基础设施
     QF_init();
@@ -119,7 +142,17 @@ void QF_onClockTick(void)
     /* 驱动 QP 状态机时间事件 */
     QTimeEvt_tick_(0U, &l_clock_tick_sender);
 #else
+    static uint8_t div_cnt = 0;
 
+    /* 假设 SysTick 基础心跳是 1ms */
+    div_cnt++;
+    if (div_cnt >= 20)
+    {
+        div_cnt = 0;
+
+        /* 🚀 驱动按键状态机运转 */
+        elab_power_key_tick_isr();
+    }
     QTIMEEVT_TICK_X(0U, &l_clock_tick_sender); // time events at rate 0
 #endif
 }

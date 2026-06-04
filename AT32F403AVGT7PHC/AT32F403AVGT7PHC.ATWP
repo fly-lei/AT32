@@ -178,6 +178,17 @@
             <ParametersSub name="OC3Buffer" value="TRUE"/>
         </Parameters>
     </TMR8>
+    <USART1>
+        <Mode>
+            <ModeSub name="Mode" value="Asynchronous"/>
+        </Mode>
+        <Parameters>
+            <ParametersSub name="RealBaudRate" value="115163"/>
+        </Parameters>
+        <Interrupts>
+            <InterruptsSub name="Interrupt_IDLE" value="TRUE"/>
+        </Interrupts>
+    </USART1>
     <USBFS>
         <Mode>
             <ModeSub name="Device" value="TRUE"/>
@@ -192,18 +203,27 @@
         <ADC3>
             <ParametersSub name="Instance" value="DMA2_Channel5"/>
         </ADC3>
+        <USART1_RX>
+            <ParametersSub name="Instance" value="DMA1_Channel5"/>
+        </USART1_RX>
+        <USART1_TX>
+            <ParametersSub name="Instance" value="DMA1_Channel4"/>
+        </USART1_TX>
     </DMA>
     <NVIC>
         <PendSV_Handler>1;15;0;0;0;1</PendSV_Handler>
         <SysTick_Handler>1;15;0;0;0;1</SysTick_Handler>
         <FLASH_IRQHandler>0;0;0;0;0;0</FLASH_IRQHandler>
         <CRM_IRQHandler>0;0;0;0;0;0</CRM_IRQHandler>
+        <DMA1_Channel4_IRQHandler>0;0;0;0;0;0</DMA1_Channel4_IRQHandler>
+        <DMA1_Channel5_IRQHandler>0;0;0;0;0;0</DMA1_Channel5_IRQHandler>
         <ADC1_2_IRQHandler>1;0;0;0;0;1</ADC1_2_IRQHandler>
         <TMR1_BRK_TMR9_IRQHandler>0;0;0;0;0;0</TMR1_BRK_TMR9_IRQHandler>
         <TMR1_OVF_TMR10_IRQHandler>0;0;0;0;0;0</TMR1_OVF_TMR10_IRQHandler>
         <TMR1_TRG_HALL_TMR11_IRQHandler>0;0;0;0;0;0</TMR1_TRG_HALL_TMR11_IRQHandler>
         <TMR1_CH_IRQHandler>0;0;0;0;0;0</TMR1_CH_IRQHandler>
         <SPI1_IRQHandler>0;0;0;0;0;0</SPI1_IRQHandler>
+        <USART1_IRQHandler>1;0;0;0;0;1</USART1_IRQHandler>
         <USBFSWakeUp_IRQHandler>0;0;0;0;0;0</USBFSWakeUp_IRQHandler>
         <TMR8_BRK_TMR12_IRQHandler>0;0;0;0;0;0</TMR8_BRK_TMR12_IRQHandler>
         <TMR8_OVF_TMR13_IRQHandler>0;0;0;0;0;0</TMR8_OVF_TMR13_IRQHandler>
@@ -307,6 +327,8 @@
         <PinSub pinname="PC6" signalname="TMR8_CH1" signaltype="3"/>
         <PinSub pinname="PC7" signalname="TMR8_CH2" signaltype="3"/>
         <PinSub pinname="PC8" signalname="TMR8_CH3" signaltype="3"/>
+        <PinSub pinname="PA9" signalname="USART1_TX" signaltype="2"/>
+        <PinSub pinname="PA10" signalname="USART1_RX" signaltype="2"/>
         <PinSub pinname="PA11" signalname="USBFS_D-" signaltype="2"/>
         <PinSub pinname="PA12" signalname="USBFS_D+" signaltype="2"/>
         <PinSub pinname="PA13" signalname="DEBUG_JTMS_SWDIO" signaltype="2"/>
@@ -356,5 +378,8 @@
         <RankSub RankNum="63" FixPosFlag="FALSE" FuncName="wk_tmr8_init" InstanceName="TMR8" CodeSection="tmr8 function" MainDoNotCallFlag="FALSE"/>
         <RankSub RankNum="13" FixPosFlag="FALSE" FuncName="wk_adc3_init" InstanceName="ADC3" CodeSection="adc3 function" MainDoNotCallFlag="FALSE"/>
         <RankSub RankNum="25" FixPosFlag="FALSE" FuncName="wk_dma2_channel5_init" InstanceName="DMA2_Channel5" CodeSection="dma2_channel5_init" MainDoNotCallFlag="FALSE"/>
+        <RankSub RankNum="32" FixPosFlag="FALSE" FuncName="wk_usart1_init" InstanceName="USART1" CodeSection="usart1 function" MainDoNotCallFlag="FALSE"/>
+        <RankSub RankNum="17" FixPosFlag="FALSE" FuncName="wk_dma1_channel4_init" InstanceName="DMA1_Channel4" CodeSection="dma1_channel4_init" MainDoNotCallFlag="FALSE"/>
+        <RankSub RankNum="18" FixPosFlag="FALSE" FuncName="wk_dma1_channel5_init" InstanceName="DMA1_Channel5" CodeSection="dma1_channel5_init" MainDoNotCallFlag="FALSE"/>
     </FunctionRankInfo>
 </Root>
