@@ -17,7 +17,8 @@ typedef struct
     QActive super;
     QTimeEvt timeEvt;   // 定时器事件
     QTimeEvt STOPTIMER; // 定时器事件
-    bool led_state;     // 内部状态
+    QTimeEvt te_telemetry;
+    bool led_state; // 内部状态
     float angle_L;
     float angle_R;
     elab_device_t *led_dev; // 虚拟设备句柄
@@ -44,12 +45,17 @@ void Blinky_ctor(void)
     QActive_ctor(&me->super, Q_STATE_CAST(&Blinky_initial));
     QTimeEvt_ctorX(&me->timeEvt, &me->super, TIMEOUT_SIG, 0U);         // 信号 TIMEOUT_SIG
     QTimeEvt_ctorX(&me->STOPTIMER, &me->super, STOP_SHUTDOWN_SIG, 0U); // 信号 STOP_SHUTDOWN_SIG
+                                                                       /* 构造时间事件，绑定到 TELEMETRY_TICK_SIG 信号 */
+    QTimeEvt_ctorX(&me->te_telemetry, (QActive *)me, TELEMETRY_TICK_SIG, 0U);
 }
 
 /* 3. 初始伪状态 (只执行一次) */
 static QState Blinky_initial(Blinky *const me, void const *const par)
 {
     (void)par;
+
+    /* 🚀 上发条：延时 20 个 Tick 后首次触发，之后每 20 个 Tick 循环触发 */
+    QTimeEvt_armX(&me->te_telemetry, 20U, 20U);
     // 寻找 VFS 设备节点
     me->led_dev = elab_device_find("led_status");
     // me->imu_sensor = elab_device_find("imu_sensor");
@@ -72,14 +78,19 @@ static QState Blinky_active(Blinky *const me, QEvt const *const e)
         /* 让左轮以 0.05 的 Vq (轻微扭矩) 往前转 */
         if (g_motor_L && g_motor_R)
         {
-            g_motor_L->run_foc.Cali_flag = 1; // 强制触发一次寻零校准 (约2秒)
-            g_motor_L->target_Vq = 0.1f;      // 校准完毕切入 case 1 后，按照 0.05f 运转！
-            g_motor_R->run_foc.Cali_flag = 1; // 强制触发一次寻零校准 (约2秒)
-            g_motor_R->target_Vq = -0.1f;     // 校准完毕切入 case 1 后，按照 0.05f 运转！
+            // g_motor_L->run_foc.Cali_flag = 1; // 强制触发一次寻零校准 (约2秒)
+            // g_motor_L->target_Vq = 0.0f;      // 校准完毕切入 case 1 后，按照 0.05f 运转！
+            // g_motor_R->run_foc.Cali_flag = 1; // 强制触发一次寻零校准 (约2秒)
+            // g_motor_R->target_Vq = 0.0f;     // 校准完毕切入 case 1 后，按照 0.05f 运转！
         }
 
         return Q_HANDLED();
 
+    case TELEMETRY_TICK_SIG:
+        /* 该函数内部会收集最新数据，并启用 DMA 瞬间发送完毕 */
+        Protocol_Send_Telemetry();
+        return Q_HANDLED();
+        
     case STOP_CMD_SIG: // 收到停止指令
         if (g_motor_L)
         {
@@ -110,7 +121,14 @@ static QState Blinky_active(Blinky *const me, QEvt const *const e)
     }
     case SHORT_PRESS_SIG:
     {
-
+        elab_system_poweron();
+        if (g_motor_L && g_motor_R)
+        {
+            g_motor_L->run_foc.Cali_flag = 1; // 强制触发一次寻零校准 (约2秒)
+            g_motor_L->target_Vq = 0.1f;      // 校准完毕切入 case 1 后，按照 0.05f 运转！
+            g_motor_R->run_foc.Cali_flag = 1; // 强制触发一次寻零校准 (约2秒)
+            g_motor_R->target_Vq = 0.1f;      // 校准完毕切入 case 1 后，按照 0.05f 运转！
+        }
         return Q_HANDLED();
     }
     case LONG_PRESS_SIG:

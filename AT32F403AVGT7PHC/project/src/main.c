@@ -170,30 +170,30 @@ int main(void)
                         DMA2_CHANNEL5_BUFFER_SIZE);
   dma_channel_enable(DMA2_CHANNEL5, TRUE);
 
-  /* init usart1 function. */
-  wk_usart1_init();
+  // /* init usart1 function. */
+  // wk_usart1_init();
 
-  /* init dma1 channel4 */
-  wk_dma1_channel4_init();
-  /* config dma channel transfer parameter */
-  /* user need to modify define values DMAx_CHANNELy_XXX_BASE_ADDR
-     and DMAx_CHANNELy_BUFFER_SIZE in at32xxx_wk_config.h */
-  wk_dma_channel_config(DMA1_CHANNEL4,
-                        (uint32_t)&USART1->dt,
-                        DMA1_CHANNEL4_MEMORY_BASE_ADDR,
-                        DMA1_CHANNEL4_BUFFER_SIZE);
-  // dma_channel_enable(DMA1_CHANNEL4, TRUE);
+  // /* init dma1 channel4 */
+  // wk_dma1_channel4_init();
+  // /* config dma channel transfer parameter */
+  // /* user need to modify define values DMAx_CHANNELy_XXX_BASE_ADDR
+  //    and DMAx_CHANNELy_BUFFER_SIZE in at32xxx_wk_config.h */
+  // wk_dma_channel_config(DMA1_CHANNEL4,
+  //                       (uint32_t)&USART1->dt,
+  //                       DMA1_CHANNEL4_MEMORY_BASE_ADDR,
+  //                       DMA1_CHANNEL4_BUFFER_SIZE);
+  // // dma_channel_enable(DMA1_CHANNEL4, TRUE);
 
-  /* init dma1 channel5 */
-  wk_dma1_channel5_init();
-  /* config dma channel transfer parameter */
-  /* user need to modify define values DMAx_CHANNELy_XXX_BASE_ADDR
-     and DMAx_CHANNELy_BUFFER_SIZE in at32xxx_wk_config.h */
-  wk_dma_channel_config(DMA1_CHANNEL5,
-                        (uint32_t)&USART1->dt,
-                        DMA1_CHANNEL5_MEMORY_BASE_ADDR,
-                        DMA1_CHANNEL5_BUFFER_SIZE);
-  dma_channel_enable(DMA1_CHANNEL5, TRUE);
+  // /* init dma1 channel5 */
+  // wk_dma1_channel5_init();
+  // /* config dma channel transfer parameter */
+  // /* user need to modify define values DMAx_CHANNELy_XXX_BASE_ADDR
+  //    and DMAx_CHANNELy_BUFFER_SIZE in at32xxx_wk_config.h */
+  // wk_dma_channel_config(DMA1_CHANNEL5,
+  //                       (uint32_t)&USART1->dt,
+  //                       DMA1_CHANNEL5_MEMORY_BASE_ADDR,
+  //                       DMA1_CHANNEL5_BUFFER_SIZE);
+  // dma_channel_enable(DMA1_CHANNEL5, TRUE);
 
   /* add user code begin 2 */
   dma_channel_enable(DMA1_CHANNEL4, FALSE);

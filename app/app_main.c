@@ -15,6 +15,7 @@ extern QActive *const AO_Blinky;
 #include "elab_foc_motor.h"
 #include "elab_tle5012b.h"
 #include "elab_power_key.h"
+#include "elab_usart1.h"
 /* ========================================================================= */
 /* ⚡ 闪电指针缓存区 (专供 20kHz 中断使用)                                   */
 /* ========================================================================= */
@@ -24,6 +25,22 @@ elab_foc_motor_t *g_motor_R = NULL;
 /* 注意这里类型是具体的 elab_tle5012b_t，而不是抽象的 elab_device_t */
 elab_tle5012b_t *g_enc_L = NULL;
 elab_tle5012b_t *g_enc_R = NULL;
+
+/* ------------------------------------------------------------------
+ * 步骤 1：定义回调函数 (充当从中断层到应用层的桥梁)
+ * 🚨 警告：此函数在串口中断内执行，绝对不能有 delay，处理越快越好！
+ * ------------------------------------------------------------------*/
+static void On_ESP32_Data_Received(uint8_t *data, uint16_t len)
+{
+    /* 方案 A：直接在这里调用你的二进制协议解析函数 */
+    Protocol_Parse_Binary(data, len);
+
+    /* 方案 B（更推荐的高级 RTOS 玩法）：
+       在这里把 data 拷贝到一个全局/消息池，然后向你的主状态机 Post 一个事件
+       QACTIVE_POST((QActive *)AO_MainApp, (QEvt *)&esp32_rx_evt, 0U);
+    */
+}
+
 /* 顶层注册的回调函数：负责将底层事件转化为状态机事件 */
 static void On_System_Key_Event(elab_key_event_t evt)
 {
@@ -63,6 +80,7 @@ void System_Link_Devices(void)
 void App_System_Start(void)
 {
     elab_power_key_init(On_System_Key_Event);
+    elab_usart1_init(115200, On_ESP32_Data_Received);
     System_Link_Devices(); /* 连接设备（必须在 QF_run 之前） */
     // 第一步：初始化 QP 框架的基础设施
     QF_init();

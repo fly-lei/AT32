@@ -104,3 +104,10 @@ void elab_system_shutdown(void)
         __NOP();
     }
 }
+void elab_system_poweron(void)
+{
+
+    // gpio_bits_set(GPIOD, GPIO_PINS_10);
+    // gpio_bits_set(GPIOE, GPIO_PINS_7);
+    /* 彻底卸载硬件使能线，断开自锁回路 */
+}

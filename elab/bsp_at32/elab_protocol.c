@@ -9,14 +9,7 @@ extern uint8_t g_system_enable;
 extern elab_foc_motor_t *g_motor_L;
 extern elab_foc_motor_t *g_motor_R;
 /* 串口底层发送接口 (上一节定义的) */
-extern void USART1_Send_Bytes(uint8_t *data, uint16_t len);
-// 注意：你需要把上节的 USART1_Send_String 改造成能发 0x00 的二进制版本：
-// void USART1_Send_Bytes(uint8_t *data, uint16_t len) {
-//     for(uint16_t i=0; i<len; i++) {
-//         while(usart_flag_get(USART1, USART_TDBE_FLAG) == RESET);
-//         usart_data_transmit(USART1, data[i]);
-//     }
-// }
+extern void elab_usart1_send_dma(uint8_t *data, uint16_t len);
 
 /* 周期性调用此函数 (例如每 20ms)，向 ESP32 汇报状态 */
 void Protocol_Send_Telemetry(void)
@@ -52,7 +45,7 @@ void Protocol_Send_Telemetry(void)
     }
 
     /* 4. 收集姿态数据 */
-    tx_frame.data.mpu_pitch_angle = (int16_t)(MPU_Get_Pitch_Angle() * 10.0f);
+    // tx_frame.data.mpu_pitch_angle = (int16_t)(MPU_Get_Pitch_Angle() * 10.0f);
 
     /* 5. 构建系统状态掩码 (Bitmask) */
     uint8_t status = 0;
@@ -77,7 +70,8 @@ void Protocol_Send_Telemetry(void)
     tx_frame.checksum = calc_sum;
 
     /* 7. 直接将结构体内存丢给串口发出去！ (共 19 字节) */
-    USART1_Send_Bytes((uint8_t *)&tx_frame, sizeof(Telemetry_Frame_t));
+    /* 将原来的 USART1_Send_Bytes 替换为这句 */
+    elab_usart1_send_dma((uint8_t *)&tx_frame, sizeof(Telemetry_Frame_t));
 }
 
 // 假设我们有全局变量供状态机或电机使用

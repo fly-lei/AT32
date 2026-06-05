@@ -35,6 +35,8 @@ extern "C"
         SHORT_PRESS_SIG,
         LONG_PRESS_SIG,
         STOP_SHUTDOWN_SIG,
+        /* 🚀 新增：遥测发送节拍信号 */
+        TELEMETRY_TICK_SIG,
         /* --- 遥控与指令信号 (Control Commands) --- */
         CMD_START_BALANCE_SIG,   /* 指令：从待机进入平衡模式 */
         CMD_STOP_BALANCE_SIG,    /* 指令：进入待机/卸载电机力矩 */

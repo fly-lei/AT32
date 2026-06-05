@@ -27,5 +27,5 @@ typedef void (*elab_key_callback_t)(elab_key_event_t evt);
 void elab_power_key_init(elab_key_callback_t callback);
 void elab_power_key_tick_isr(void);
 void elab_system_shutdown(void);
-
+void elab_system_poweron(void);
 #endif /* __ELAB_POWER_KEY_H */
