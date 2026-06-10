@@ -32,9 +32,10 @@ uint16_t tle5012b_read_raw_fast(elab_tle5012b_t *inst)
 /* ========================================================================= */
 /* 底层 SPI 16位 硬件通信层                                                  */
 /* ========================================================================= */
+
 static uint16_t tle_spi_swap_16bit(spi_type *spi_x, uint16_t tx_data)
 {
-    uint32_t timeout = 1000; // 超时计数器 (根据主频微调)
+    volatile uint32_t timeout = 150; // 超时计数器 (根据主频微调)
 
     /* 等待发送缓冲区空，加上超时保护 */
     while (spi_i2s_flag_get(spi_x, SPI_I2S_TDBE_FLAG) == RESET)
@@ -46,7 +47,7 @@ static uint16_t tle_spi_swap_16bit(spi_type *spi_x, uint16_t tx_data)
     }
     spi_i2s_data_transmit(spi_x, tx_data);
 
-    timeout = 1000; // 重置超时计数器
+    timeout = 150; // 重置超时计数器
 
     /* 等待接收缓冲区非空，加上超时保护 */
     while (spi_i2s_flag_get(spi_x, SPI_I2S_RDBF_FLAG) == RESET)

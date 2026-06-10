@@ -240,10 +240,12 @@ void SysTick_Handler(void)
  * @param  none
  * @retval none
  */
+volatile uint32_t g_adc_isr_cycles = 0;     // 当前这次中断消耗的 CPU 周期数
+volatile uint32_t g_adc_isr_max_cycles = 0; // 历史上消耗最多的 CPU 周期数（峰值）
 void ADC1_2_IRQHandler(void)
 {
   /* add user code begin ADC1_2_IRQ 0 */
-
+  uint32_t start_time = DWT->CYCCNT;
   /* add user code end ADC1_2_IRQ 0 */
 
   if (adc_interrupt_flag_get(ADC1, ADC_PCCE_FLAG) != RESET)
@@ -269,7 +271,14 @@ void ADC1_2_IRQHandler(void)
   }
 
   /* add user code begin ADC1_2_IRQ 1 */
+  uint32_t stop_time = DWT->CYCCNT;
+  g_adc_isr_cycles = stop_time - start_time;
 
+  /* 3. 记录历史最高峰值 */
+  if (g_adc_isr_cycles > g_adc_isr_max_cycles)
+  {
+    g_adc_isr_max_cycles = g_adc_isr_cycles;
+  }
   /* add user code end ADC1_2_IRQ 1 */
 }
 

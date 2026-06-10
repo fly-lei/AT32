@@ -88,21 +88,49 @@ void elab_usart1_send_dma(uint8_t *data, uint16_t len)
     DMA1_CHANNEL4->dtcnt = len;
     dma_channel_enable(DMA1_CHANNEL4, TRUE);
 }
+/* ========================================================================= */
+/* 普通轮询阻塞发送模式 (临时用于排查 DMA 问题，函数名保持不变以免上层报错)       */
+/* ========================================================================= */
+// void elab_usart1_send_dma(uint8_t *data, uint16_t len)
+// {
+//     /* 遍历待发送的每一个字节 */
+//     for (uint16_t i = 0; i < len; i++)
+//     {
+//         /* 1. 等待发送数据寄存器为空 (TDBE: Transmit Data Buffer Empty)
+//            如果不为空说明上一个字节还在排队，CPU 必须死等 */
+//         while (usart_flag_get(USART1, USART_TDBE_FLAG) == RESET)
+//         {
+//             __NOP();
+//         }
+
+//         /* 2. 将当前字节塞入发送寄存器 */
+//         usart_data_transmit(USART1, data[i]);
+//     }
+
+//     /* 3. 等待最后一个字节彻底从底层的移位寄存器中飞出去 (TDC: Transmit Data Complete) */
+//     while (usart_flag_get(USART1, USART_TDC_FLAG) == RESET)
+//     {
+//         __NOP();
+//     }
+// }
 
 /* ========================================================================= */
 /* 硬件中断服务函数 (接管串口空闲中断)                                       */
 /* 注意：如果 at32f403a_407_int.c 中已经有了此函数，请将那边的删掉以免冲突 */
 /* ========================================================================= */
+
 void USART1_IRQHandler(void)
 {
-    if (usart_interrupt_flag_get(USART1, USART_IDLE_INT) != RESET)
-    {
-        /* 1. 读取 STS 和 DT 寄存器，硬件自动清除 IDLE 标志位 */
-        volatile uint32_t dummy = USART1->sts;
-        dummy = USART1->dt;
-        (void)dummy;
+    /* add user code begin USART1_IRQ 0 */
 
-        /* 2. 暂停接收 DMA 以锁定缓冲区 */
+    /* add user code end USART1_IRQ 0 */
+
+    if (usart_interrupt_flag_get(USART1, USART_IDLEF_FLAG) != RESET)
+    {
+        /* add user code begin USART1_USART_IDLEF_FLAG */
+        /* clear flag */
+        usart_flag_clear(USART1, USART_IDLEF_FLAG);
+        //         /* 2. 暂停接收 DMA 以锁定缓冲区 */
         dma_channel_enable(DMA1_CHANNEL5, FALSE);
 
         /* 3. 计算实际接收到了多少个字节
@@ -118,5 +146,10 @@ void USART1_IRQHandler(void)
         /* 5. 重新装填接收 DMA，准备迎接下一帧数据 */
         DMA1_CHANNEL5->dtcnt = ELAB_USART1_RX_MAX_LEN;
         dma_channel_enable(DMA1_CHANNEL5, TRUE);
+        /* add user code end USART1_USART_IDLEF_FLAG */
     }
+
+    /* add user code begin USART1_IRQ 1 */
+
+    /* add user code end USART1_IRQ 1 */
 }

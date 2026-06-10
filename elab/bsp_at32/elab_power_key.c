@@ -93,6 +93,11 @@ void elab_system_shutdown(void)
 {
     /* 进入临界区，关闭全局中断，防止断电瞬间产生硬件级毛刺和中断紊乱 */
     __disable_irq();
+    /* 1. 关闭高频外设和总线，防止复位瞬间硬件状态机错乱 */
+    dma_channel_enable(DMA1_CHANNEL5, FALSE);              // 关闭串口接收 DMA
+    usart_interrupt_enable(USART1, USART_IDLE_INT, FALSE); // 关闭串口中断
+    tmr_counter_enable(TMR1, FALSE);
+    tmr_counter_enable(TMR8, FALSE); // 关闭 FOC 高级定时器 (极其重要，防止炸管)
     gpio_bits_reset(GPIOD, GPIO_PINS_10);
     gpio_bits_reset(GPIOE, GPIO_PINS_7);
     /* 彻底卸载硬件使能线，断开自锁回路 */

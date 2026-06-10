@@ -43,6 +43,7 @@
 #include "qpc.h"
 #include "elab.h"
 #include "elab_protocol.h"
+#include "core_cm4.h" // 确保包含了 ARM 内核头文件
 extern void App_System_Start(void);
 /* add user code end private includes */
 
@@ -103,10 +104,17 @@ void QV_onIdle(void)
 int main(void)
 {
   /* add user code begin 1 */
+  // 纯硬件死循环延时，什么都不干，等电压彻底稳如老狗
+  for (volatile int i = 0; i < 500000; i++)
+    ;
   /* 1. 暴力关闭全局中断，防止任何人抢跑！ */
   __disable_irq();
   /* add user code end 1 */
-
+  /* ========================================================= */
+  /* 🚀 激活内核 DWT 时钟周期计数器                             */
+  /* ========================================================= */
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk; // 1. 开启 Trace 外设
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
   /* system clock config. */
   wk_system_clock_config();
 

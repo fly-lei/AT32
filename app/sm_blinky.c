@@ -78,10 +78,10 @@ static QState Blinky_active(Blinky *const me, QEvt const *const e)
         /* 让左轮以 0.05 的 Vq (轻微扭矩) 往前转 */
         if (g_motor_L && g_motor_R)
         {
-            // g_motor_L->run_foc.Cali_flag = 1; // 强制触发一次寻零校准 (约2秒)
-            // g_motor_L->target_Vq = 0.0f;      // 校准完毕切入 case 1 后，按照 0.05f 运转！
+            g_motor_L->run_foc.Cali_flag = 1; // 强制触发一次寻零校准 (约2秒)
+            g_motor_L->target_Vq = 0.05f;     // 校准完毕切入 case 1 后，按照 0.05f 运转！
             // g_motor_R->run_foc.Cali_flag = 1; // 强制触发一次寻零校准 (约2秒)
-            // g_motor_R->target_Vq = 0.0f;     // 校准完毕切入 case 1 后，按照 0.05f 运转！
+            // g_motor_R->target_Vq = 0.05f;     // 校准完毕切入 case 1 后，按照 0.05f 运转！
         }
 
         return Q_HANDLED();
@@ -90,7 +90,7 @@ static QState Blinky_active(Blinky *const me, QEvt const *const e)
         /* 该函数内部会收集最新数据，并启用 DMA 瞬间发送完毕 */
         Protocol_Send_Telemetry();
         return Q_HANDLED();
-        
+
     case STOP_CMD_SIG: // 收到停止指令
         if (g_motor_L)
         {
@@ -121,14 +121,14 @@ static QState Blinky_active(Blinky *const me, QEvt const *const e)
     }
     case SHORT_PRESS_SIG:
     {
-        elab_system_poweron();
-        if (g_motor_L && g_motor_R)
-        {
-            g_motor_L->run_foc.Cali_flag = 1; // 强制触发一次寻零校准 (约2秒)
-            g_motor_L->target_Vq = 0.1f;      // 校准完毕切入 case 1 后，按照 0.05f 运转！
-            g_motor_R->run_foc.Cali_flag = 1; // 强制触发一次寻零校准 (约2秒)
-            g_motor_R->target_Vq = 0.1f;      // 校准完毕切入 case 1 后，按照 0.05f 运转！
-        }
+        // elab_system_poweron();
+        // if (g_motor_L && g_motor_R)
+        // {
+        //     g_motor_L->run_foc.Cali_flag = 1; // 强制触发一次寻零校准 (约2秒)
+        //     g_motor_L->target_Vq = 0.1f;      // 校准完毕切入 case 1 后，按照 0.05f 运转！
+        //     g_motor_R->run_foc.Cali_flag = 1; // 强制触发一次寻零校准 (约2秒)
+        //     g_motor_R->target_Vq = 0.1f;      // 校准完毕切入 case 1 后，按照 0.05f 运转！
+        // }
         return Q_HANDLED();
     }
     case LONG_PRESS_SIG:
