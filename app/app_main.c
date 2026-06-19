@@ -1,4 +1,7 @@
 // app/app_main.c
+#include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
 #include "qpc.h"
 #include "app_events.h" // 你的全局事件定义
 #include "elab_port.h"
@@ -16,6 +19,7 @@ extern QActive *const AO_Blinky;
 #include "elab_tle5012b.h"
 #include "elab_power_key.h"
 #include "elab_usart1.h"
+#include "elab_protocol.h"
 /* ========================================================================= */
 /* ⚡ 闪电指针缓存区 (专供 20kHz 中断使用)                                   */
 /* ========================================================================= */
@@ -25,7 +29,14 @@ elab_foc_motor_t *g_motor_R = NULL;
 /* 注意这里类型是具体的 elab_tle5012b_t，而不是抽象的 elab_device_t */
 elab_tle5012b_t *g_enc_L = NULL;
 elab_tle5012b_t *g_enc_R = NULL;
+/* 定义你的全局控制变量，供 FOC 电机或状态机使用 */
+// 假设我们有全局变量供状态机或电机使用
 
+// uint8_t g_system_enable = 0;
+int16_t g_remote_speed = 0;  // 目标线速度
+int16_t g_remote_turn = 0;   // 目标转向度
+bool g_car_light_on = false; // 车灯状态
+bool g_car_horn_on = false;  // 喇叭状态
 /* ------------------------------------------------------------------
  * 步骤 1：定义回调函数 (充当从中断层到应用层的桥梁)
  * 🚨 警告：此函数在串口中断内执行，绝对不能有 delay，处理越快越好！
@@ -33,12 +44,111 @@ elab_tle5012b_t *g_enc_R = NULL;
 static void On_ESP32_Data_Received(uint8_t *data, uint16_t len)
 {
     /* 方案 A：直接在这里调用你的二进制协议解析函数 */
-    Protocol_Parse_Binary(data, len);
+    Protocol_Parse_App_String(data, len);
 
     /* 方案 B（更推荐的高级 RTOS 玩法）：
        在这里把 data 拷贝到一个全局/消息池，然后向你的主状态机 Post 一个事件
        QACTIVE_POST((QActive *)AO_MainApp, (QEvt *)&esp32_rx_evt, 0U);
     */
+}
+
+/**
+ * @brief  解析来自手机 APP 的字符串指令
+ * @param  data: DMA 接收到的原始数据指针
+ * @param  len:  本次实际接收到的字节数 (极度重要，用来切断幽灵数据)
+ */
+
+void Protocol_Parse_App_String(uint8_t *data, uint16_t len)
+{
+    /* 1. 防呆保护 */
+    if (data == NULL || len == 0)
+        return;
+
+    /* 2. 建立局部安全缓冲区，过滤掉后面的“幽灵残留数据” */
+    char cmd_str[32] = {0};
+    uint16_t copy_len = (len < sizeof(cmd_str)) ? len : (sizeof(cmd_str) - 1);
+
+    // 只拷贝本次真正收到的长度
+    memcpy(cmd_str, data, copy_len);
+    // 强制加上字符串结束符 '\0'，把后面的乱码彻底物理隔绝！
+    cmd_str[copy_len] = '\0';
+
+    /* 3. 剔除末尾的换行符 '\n' 或 '\r'，让字符串变得干净，方便用 strcmp 对比 */
+    for (int i = 0; i < copy_len; i++)
+    {
+        if (cmd_str[i] == '\n' || cmd_str[i] == '\r')
+        {
+            cmd_str[i] = '\0';
+            break;
+        }
+    }
+
+    /* ========================================================= */
+    /* 4. 核心路由：命令比对与动作分发                           */
+    /* ========================================================= */
+    /* 解析逻辑改造 */
+    if (strncmp(cmd_str, "Speed_", 6) == 0)
+    {
+        MotorEvt *e = Q_NEW(MotorEvt, MOTOR_CTRL_SIG);
+        e->speed = atoi(&cmd_str[6]);
+        e->turn = g_remote_turn; // 使用上一次保存的状态
+        QACTIVE_POST(AO_Blinky, (QEvt *)e, 0U);
+    }
+
+    else if (strcmp(cmd_str, "UP") == 0)
+    {
+        MotorEvt *e = Q_NEW(MotorEvt, MOTOR_CTRL_SIG);
+        e->speed = 100;
+        e->turn = 0;
+        QACTIVE_POST(AO_Blinky, (QEvt *)e, 0U);
+    }
+    else if (strcmp(cmd_str, "LIGHT") == 0)
+    {
+        SystemEvt *e = Q_NEW(SystemEvt, SYSTEM_CMD_SIG);
+        e->cmd = CMD_LIGHT_TOGGLE;
+        QACTIVE_POST(AO_Blinky, (QEvt *)e, 0U);
+    }
+    else if (strcmp(cmd_str, "DOWN") == 0)
+    {
+        MotorEvt *e = Q_NEW(MotorEvt, MOTOR_CTRL_SIG);
+        e->speed = -100;
+        e->turn = 0;
+        QACTIVE_POST(AO_Blinky, (QEvt *)e, 0U);
+    }
+    else if (strcmp(cmd_str, "LEFT") == 0)
+    {
+        MotorEvt *e = Q_NEW(MotorEvt, MOTOR_CTRL_SIG);
+        e->speed = 0;
+        e->turn = -50;
+        QACTIVE_POST(AO_Blinky, (QEvt *)e, 0U);
+    }
+    else if (strcmp(cmd_str, "RIGHT") == 0) // 盲猜你的APP有RIGHT
+    {
+        MotorEvt *e = Q_NEW(MotorEvt, MOTOR_CTRL_SIG);
+        e->speed = 0;
+        e->turn = 50;
+        QACTIVE_POST(AO_Blinky, (QEvt *)e, 0U);
+    }
+
+    else if (strcmp(cmd_str, "HORN") == 0)
+    {
+        SystemEvt *e = Q_NEW(SystemEvt, SYSTEM_CMD_SIG);
+        e->cmd = CMD_HORN_ON;
+        QACTIVE_POST(AO_Blinky, (QEvt *)e, 0U);
+    }
+
+    /* D. 解析自定义按键 A/B/C/D */
+    else if (strcmp(cmd_str, "A") == 0)
+    {
+        // 比如：切换底盘模式 (阿克曼模式 -> 麦克纳姆轮模式)
+    }
+    else if (strcmp(cmd_str, "B") == 0)
+    {
+        // 比如：紧急刹车停机
+        g_remote_speed = 0;
+        g_remote_turn = 0;
+    }
+    // else if (strcmp(cmd_str, "C") == 0) ...
 }
 
 /* 顶层注册的回调函数：负责将底层事件转化为状态机事件 */

@@ -1,0 +1,7 @@
+/home/fly/workat32/build_at32/CMakeFiles/app_core.dir
+/home/fly/workat32/build_at32/CMakeFiles/elab_vfs.dir
+/home/fly/workat32/build_at32/CMakeFiles/bsp_hw.dir
+/home/fly/workat32/build_at32/CMakeFiles/test.elf.dir
+/home/fly/workat32/build_at32/CMakeFiles/flash.dir
+/home/fly/workat32/build_at32/CMakeFiles/edit_cache.dir
+/home/fly/workat32/build_at32/CMakeFiles/rebuild_cache.dir

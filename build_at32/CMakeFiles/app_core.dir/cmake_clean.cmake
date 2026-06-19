@@ -1,0 +1,41 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/app_core.dir/app/app_main.c.obj"
+  "CMakeFiles/app_core.dir/app/app_main.c.obj.d"
+  "CMakeFiles/app_core.dir/app/sm_blinky.c.obj"
+  "CMakeFiles/app_core.dir/app/sm_blinky.c.obj.d"
+  "CMakeFiles/app_core.dir/app/usb_app.c.obj"
+  "CMakeFiles/app_core.dir/app/usb_app.c.obj.d"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qep_hsm.c.obj"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qep_hsm.c.obj.d"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qep_msm.c.obj"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qep_msm.c.obj.d"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_act.c.obj"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_act.c.obj.d"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_actq.c.obj"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_actq.c.obj.d"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_defer.c.obj"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_defer.c.obj.d"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_dyn.c.obj"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_dyn.c.obj.d"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_mem.c.obj"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_mem.c.obj.d"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_ps.c.obj"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_ps.c.obj.d"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_qact.c.obj"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_qact.c.obj.d"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_qeq.c.obj"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_qeq.c.obj.d"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_qmact.c.obj"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_qmact.c.obj.d"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_time.c.obj"
+  "CMakeFiles/app_core.dir/qpc/src/qf/qf_time.c.obj.d"
+  "CMakeFiles/app_core.dir/qpc/src/qv/qv.c.obj"
+  "CMakeFiles/app_core.dir/qpc/src/qv/qv.c.obj.d"
+  "libapp_core.a"
+  "libapp_core.pdb"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang C)
+  include(CMakeFiles/app_core.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

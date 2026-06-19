@@ -38,6 +38,8 @@ extern "C"
         /* 🚀 新增：遥测发送节拍信号 */
         TELEMETRY_TICK_SIG,
         /* --- 遥控与指令信号 (Control Commands) --- */
+        MOTOR_CTRL_SIG,
+        SYSTEM_CMD_SIG,
         CMD_START_BALANCE_SIG,   /* 指令：从待机进入平衡模式 */
         CMD_STOP_BALANCE_SIG,    /* 指令：进入待机/卸载电机力矩 */
         CMD_UPDATE_SETPOINT_SIG, /* 指令：更新期望的速度和转向角 */
@@ -55,6 +57,28 @@ extern "C"
         MAX_PUB_SIG
     };
 
+    // 电机控制事件（包含速度和转向）
+    typedef struct
+    {
+        QEvt super;
+        int16_t speed;
+        int16_t turn;
+    } MotorEvt;
+
+    // 系统指令事件（包含命令码）
+    typedef enum
+    {
+        CMD_LIGHT_TOGGLE,
+        CMD_HORN_ON,
+        CMD_MODE_A,
+        CMD_EMERGENCY_STOP
+    } SystemCmd_t;
+
+    typedef struct
+    {
+        QEvt super;
+        SystemCmd_t cmd;
+    } SystemEvt;
     /* ===========================================================================*/
     /* 2. 事件载荷结构体 (Event Structures with Payload)                            */
     /* ===========================================================================*/

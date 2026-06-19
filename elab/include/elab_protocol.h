@@ -17,7 +17,8 @@
 #define SYS_ERR_ENC_R 0x08     // 1:右编码器故障
 #define SYS_ERR_BATT_LOW 0x10  // 1:电池极低警告
 #define SYS_ERR_OVER_TEMP 0x20 // 1:电机过温保护
-
+extern int16_t g_remote_speed;
+extern int16_t g_remote_turn;
 typedef struct
 {
     uint16_t bat_voltage_mv; // 电池电压 (毫伏, 例如 7850 = 7.85V)

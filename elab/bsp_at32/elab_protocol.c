@@ -75,8 +75,8 @@ void Protocol_Send_Telemetry(void)
 }
 
 // 假设我们有全局变量供状态机或电机使用
-int16_t g_remote_speed = 0;
-int16_t g_remote_turn = 0;
+// int16_t g_remote_speed = 0;
+// int16_t g_remote_turn = 0;
 uint8_t g_system_enable = 0;
 
 /* 极速二进制帧解析引擎 */

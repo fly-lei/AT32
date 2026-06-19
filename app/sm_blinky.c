@@ -6,6 +6,9 @@
 #include "app_events.h"
 #include "elab_foc_motor.h"
 #include "elab_adc3.h"
+#include "elab_protocol.h"
+// /* 🚀 加上这一句，让当前文件认识 USART1 和底层函数 */
+#include "at32f403a_407.h"
 // 声明外部指针 (你在 System_Link_Devices 里找好的)
 extern elab_foc_motor_t *g_motor_L;
 extern elab_foc_motor_t *g_motor_R;
@@ -86,6 +89,35 @@ static QState Blinky_active(Blinky *const me, QEvt const *const e)
 
         return Q_HANDLED();
 
+    case MOTOR_CTRL_SIG:
+    {
+        MotorEvt const *mevt = (MotorEvt const *)e;
+        // 直接在这里更新全局控制变量，或发送给电机驱动层
+        g_remote_speed = mevt->speed;
+        g_remote_turn = mevt->turn;
+        g_motor_L->target_Vq = g_remote_speed * 0.01f; // 这里简单地把速度转化为 Vq，实际项目中你可能需要更复杂的阿克曼/差速逻辑
+        return Q_HANDLED();
+    }
+
+    case SYSTEM_CMD_SIG:
+    {
+        SystemEvt const *sevt = (SystemEvt const *)e;
+        switch (sevt->cmd)
+        {
+        case CMD_LIGHT_TOGGLE:
+            // g_car_light_on = !g_car_light_on;
+            // 执行硬件操作：elab_led_toggle(...);
+            break;
+        case CMD_EMERGENCY_STOP:
+            g_remote_speed = 0;
+            g_remote_turn = 0;
+            break;
+        default:
+            break;
+        }
+        return Q_HANDLED();
+    }
+
     case TELEMETRY_TICK_SIG:
         /* 该函数内部会收集最新数据，并启用 DMA 瞬间发送完毕 */
         Protocol_Send_Telemetry();
@@ -145,19 +177,7 @@ static QState Blinky_active(Blinky *const me, QEvt const *const e)
     case TIMEOUT_SIG:
     {                                   // 定时器滴答事件到达
         me->led_state = !me->led_state; // 逻辑翻转
-                                        //         if (me->enc_left) {
-                                        //             elab_device_read(me->enc_left, 0, &me->angle_L, sizeof(float));
-                                        //         }
-                                        //         if (me->enc_right) {
-                                        //             elab_device_read(me->enc_right, 0, &me->angle_R, sizeof(float));
-                                        //         }
-                                        //        float imu_data[6]; // 用于存放 3轴加速度 + 3轴陀螺仪
-                                        //        int read_bytes = elab_device_read(me->imu_sensor, 0, imu_data, sizeof(imu_data));
 
-        //     /* 3. 数据处理 */
-        //         if (read_bytes == sizeof(imu_data)) {
-
-        // }
         uint8_t battery_percent = Get_Battery_Percent(Get_Battery_Voltage());
         Get_Motor_Temperature(); // 直接调用获取温度的函数，虽然现在没存储结果，但你可以在这里添加日志输出或其他处理
         if (me->led_dev)
