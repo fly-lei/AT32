@@ -153,14 +153,7 @@ static QState Blinky_active(Blinky *const me, QEvt const *const e)
     }
     case SHORT_PRESS_SIG:
     {
-        // elab_system_poweron();
-        // if (g_motor_L && g_motor_R)
-        // {
-        //     g_motor_L->run_foc.Cali_flag = 1; // 强制触发一次寻零校准 (约2秒)
-        //     g_motor_L->target_Vq = 0.1f;      // 校准完毕切入 case 1 后，按照 0.05f 运转！
-        //     g_motor_R->run_foc.Cali_flag = 1; // 强制触发一次寻零校准 (约2秒)
-        //     g_motor_R->target_Vq = 0.1f;      // 校准完毕切入 case 1 后，按照 0.05f 运转！
-        // }
+
         return Q_HANDLED();
     }
     case LONG_PRESS_SIG:
