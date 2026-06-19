@@ -14,7 +14,7 @@ extern void elab_usart1_send_dma(uint8_t *data, uint16_t len);
 /* 周期性调用此函数 (例如每 20ms)，向 ESP32 汇报状态 */
 void Protocol_Send_Telemetry(void)
 {
-    Telemetry_Frame_t tx_frame;
+    static Telemetry_Frame_t tx_frame;
 
     /* 1. 填入帧头和指令码 */
     tx_frame.head1 = 0xA5;

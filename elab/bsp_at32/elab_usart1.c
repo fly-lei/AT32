@@ -76,21 +76,10 @@ void elab_usart1_init(uint32_t baudrate, elab_usart_rx_callback_t rx_callback)
     usart_enable(USART1, TRUE);
 }
 
-void elab_usart1_send_dma(uint8_t *data, uint16_t len)
-{
-    /* 防冲突保护：如果上一次还没发完，直接丢弃本次 */
-    if (DMA1_CHANNEL4->ctrl_bit.chen == TRUE)
-        return;
-
-    /* 清除发送 DMA 标志，装填新地址和长度，开火！ */
-    dma_flag_clear(DMA1_FDT4_FLAG);
-    DMA1_CHANNEL4->maddr = (uint32_t)data;
-    DMA1_CHANNEL4->dtcnt = len;
-    dma_channel_enable(DMA1_CHANNEL4, TRUE);
-}
 /* ========================================================================= */
 /* 普通轮询阻塞发送模式 (临时用于排查 DMA 问题，函数名保持不变以免上层报错)       */
 /* ========================================================================= */
+
 // void elab_usart1_send_dma(uint8_t *data, uint16_t len)
 // {
 //     /* 遍历待发送的每一个字节 */
@@ -114,27 +103,43 @@ void elab_usart1_send_dma(uint8_t *data, uint16_t len)
 //     }
 // }
 
-/* ========================================================================= */
-/* 硬件中断服务函数 (接管串口空闲中断)                                       */
-/* 注意：如果 at32f403a_407_int.c 中已经有了此函数，请将那边的删掉以免冲突 */
-/* ========================================================================= */
+void elab_usart1_send_dma(uint8_t *data, uint16_t len)
+{
+    /* 防冲突保护：如果 DMA 正在忙碌，直接退出 */
+    if (DMA1_CHANNEL4->ctrl_bit.chen == TRUE)
+        return;
+
+    /* 🚀 必须显式关闭通道，才能修改地址和长度寄存器 */
+    dma_channel_enable(DMA1_CHANNEL4, FALSE);
+
+    /* 清除发送完成标志 */
+    dma_flag_clear(DMA1_FDT4_FLAG);
+
+    /* 装填新的内存地址和发送长度 */
+    DMA1_CHANNEL4->maddr = (uint32_t)data;
+    DMA1_CHANNEL4->dtcnt = len;
+
+    /* 开火！ */
+    dma_channel_enable(DMA1_CHANNEL4, TRUE);
+}
 
 void USART1_IRQHandler(void)
 {
-    /* add user code begin USART1_IRQ 0 */
-
-    /* add user code end USART1_IRQ 0 */
-
+    /* 检查是否是空闲中断 */
     if (usart_interrupt_flag_get(USART1, USART_IDLEF_FLAG) != RESET)
     {
-        /* add user code begin USART1_USART_IDLEF_FLAG */
-        /* clear flag */
-        usart_flag_clear(USART1, USART_IDLEF_FLAG);
-        //         /* 2. 暂停接收 DMA 以锁定缓冲区 */
+        /* =============================================================== */
+        /* 🚀 致命修复：清除 IDLE 中断标志位的唯一正确方法 (硬件机制)      */
+        /* 必须先读 STS，再读 DT 寄存器，硬件才会自动清除该标志！          */
+        /* =============================================================== */
+        volatile uint32_t temp = USART1->sts;
+        temp = USART1->dt;
+        (void)temp; // 防止编译器报“变量未使用”的警告
+
+        /* 2. 暂停接收 DMA 以锁定缓冲区 */
         dma_channel_enable(DMA1_CHANNEL5, FALSE);
 
-        /* 3. 计算实际接收到了多少个字节
-           总长度 - DMA 剩余未搬运的计数 = 真实接收长度 */
+        /* 3. 计算实际接收到了多少个字节 */
         uint16_t rx_len = ELAB_USART1_RX_MAX_LEN - DMA1_CHANNEL5->dtcnt;
 
         /* 4. 触发回调，将数据抛给上层业务逻辑 */
@@ -146,10 +151,45 @@ void USART1_IRQHandler(void)
         /* 5. 重新装填接收 DMA，准备迎接下一帧数据 */
         DMA1_CHANNEL5->dtcnt = ELAB_USART1_RX_MAX_LEN;
         dma_channel_enable(DMA1_CHANNEL5, TRUE);
-        /* add user code end USART1_USART_IDLEF_FLAG */
     }
-
-    /* add user code begin USART1_IRQ 1 */
-
-    /* add user code end USART1_IRQ 1 */
 }
+
+/* ========================================================================= */
+/* 硬件中断服务函数 (接管串口空闲中断)                                       */
+/* 注意：如果 at32f403a_407_int.c 中已经有了此函数，请将那边的删掉以免冲突 */
+/* ========================================================================= */
+
+// void USART1_IRQHandler(void)
+// {
+//     /* add user code begin USART1_IRQ 0 */
+
+//     /* add user code end USART1_IRQ 0 */
+
+//     if (usart_interrupt_flag_get(USART1, USART_IDLEF_FLAG) != RESET)
+//     {
+//         /* add user code begin USART1_USART_IDLEF_FLAG */
+//         /* clear flag */
+//         usart_flag_clear(USART1, USART_IDLEF_FLAG);
+//         //         /* 2. 暂停接收 DMA 以锁定缓冲区 */
+//         dma_channel_enable(DMA1_CHANNEL5, FALSE);
+
+//         /* 3. 计算实际接收到了多少个字节
+//            总长度 - DMA 剩余未搬运的计数 = 真实接收长度 */
+//         uint16_t rx_len = ELAB_USART1_RX_MAX_LEN - DMA1_CHANNEL5->dtcnt;
+
+//         /* 4. 触发回调，将数据抛给上层业务逻辑 */
+//         if (g_rx_cb != NULL && rx_len > 0)
+//         {
+//             g_rx_cb(g_rx_buffer, rx_len);
+//         }
+
+//         /* 5. 重新装填接收 DMA，准备迎接下一帧数据 */
+//         DMA1_CHANNEL5->dtcnt = ELAB_USART1_RX_MAX_LEN;
+//         dma_channel_enable(DMA1_CHANNEL5, TRUE);
+//         /* add user code end USART1_USART_IDLEF_FLAG */
+//     }
+
+//     /* add user code begin USART1_IRQ 1 */
+
+//     /* add user code end USART1_IRQ 1 */
+// }
